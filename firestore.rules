@@ -14,8 +14,8 @@ service cloud.firestore {
     //   name: string, 0..80 chars; date: YYYY-MM-DD string; done: bool.
     //   habitId must equal name + '-' + date. Exactly these fields are accepted.
     // Ownership is determined solely by the path UID. Clients can read their
-    // own known documents and create/update them. Deletes and collection list
-    // queries are denied. Date checks enforce the format, not calendar validity.
+    // their own collections and create/update records. Deletes are denied.
+    // Date checks enforce format, not calendar validity.
     // =============================================================
 
     function isAuthenticated() {
