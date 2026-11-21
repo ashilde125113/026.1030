@@ -39,6 +39,7 @@
 </div>
 <nav class="mobile-nav"><button class="active" data-section="總覽"><b>⌂</b>總覽</button><button data-section="行程"><b>▦</b>行程</button><button data-section="任務"><b>☑</b>任務</button><button data-section="習慣"><b>◉</b>習慣</button><button data-section="專案"><b>▤</b>專案</button></nav>
 <div class="modal-backdrop" id="modal"><form class="modal" id="itemForm"><div class="modal-head"><h2>新增一件事</h2><button type="button" class="close" id="closeModal">×</button></div><div class="field"><label for="itemTitle">名稱</label><input id="itemTitle" required maxlength="80" placeholder="例如：準備簡報初稿" /></div><div class="field"><label for="itemType">類型</label><select id="itemType"><option value="task">待辦任務</option><option value="schedule">行程</option><option value="habit">習慣打卡</option><option value="inspiration">靈感筆記</option></select></div><div class="field" id="timeField"><label for="itemTime">時間（選填）</label><input id="itemTime" type="time" /></div><div class="field"><label for="itemNote">備註（選填）</label><textarea id="itemNote" placeholder="補充一點細節…"></textarea></div><div class="modal-actions"><button type="button" class="cancel" id="cancelModal">取消</button><button class="add-btn">建立事項</button></div></form></div>
+<script type="module" src="./firebase-init.js"></script>
 <script>
 (()=>{
  const today=new Date(2026,9,30);let selected=new Date(today),view='week',filter='all';
