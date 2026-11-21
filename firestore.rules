@@ -1,0 +1,114 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // =============================================================
+    // Assumed data model
+    // =============================================================
+    // Item: users/{uid}/items/{itemId}
+    //   id: integer; title: string, 0..80 chars; type: task/schedule/habit/
+    //   inspiration; date: YYYY-MM-DD string; time: string, 0..5 chars (empty
+    //   is allowed); done: bool; tag: string, 0..200 chars; color: one of
+    //   sage/blue/rose/ochre/lav. Exactly these fields are accepted.
+    // Habit: users/{uid}/habits/{habitId}
+    //   name: string, 0..80 chars; date: YYYY-MM-DD string; done: bool.
+    //   habitId must equal name + '-' + date. Exactly these fields are accepted.
+    // Ownership is determined solely by the path UID. Clients can read their
+    // own known documents and create/update them. Deletes and collection list
+    // queries are denied. Date checks enforce the format, not calendar validity.
+    // =============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isDocOwner(uid) {
+      return isOwner(uid);
+    }
+
+    // Neither record schema has a UID field; reject ownership fields entirely.
+    function uidUnchanged(data) {
+      return !('uid' in data);
+    }
+
+    function uidNotModified(data) {
+      return !('uid' in data);
+    }
+
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    function validText(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function isValidDate(value) {
+      return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    // Validator used by both create and update so updates cannot bypass schema checks.
+    function isValidItem(data) {
+      return data is map &&
+        hasRequiredFields(data, ['id', 'title', 'type', 'date', 'time', 'done', 'tag', 'color']) &&
+        hasOnlyAllowedFields(data, ['id', 'title', 'type', 'date', 'time', 'done', 'tag', 'color']) &&
+        data.id is int &&
+        validText(data.title, 80) &&
+        data.type in ['task', 'schedule', 'habit', 'inspiration'] &&
+        isValidDate(data.date) &&
+        validText(data.time, 5) &&
+        data.done is bool &&
+        validText(data.tag, 200) &&
+        data.color in ['sage', 'blue', 'rose', 'ochre', 'lav'];
+    }
+
+    function isValidHabit(data, habitId) {
+      return data is map &&
+        hasRequiredFields(data, ['name', 'date', 'done']) &&
+        hasOnlyAllowedFields(data, ['name', 'date', 'done']) &&
+        validText(data.name, 80) &&
+        isValidDate(data.date) &&
+        data.done is bool &&
+        habitId == data.name + '-' + data.date;
+    }
+
+    match /users/{uid}/items/{itemId} {
+      allow get: if isDocOwner(uid);
+      // Collection listeners require list permission; the UID path keeps each
+      // user's collection isolated.
+      allow list: if isDocOwner(uid);
+      allow create: if isOwner(uid) &&
+        uidUnchanged(request.resource.data) &&
+        isValidItem(request.resource.data);
+      allow update: if isOwner(uid) &&
+        uidNotModified(request.resource.data) &&
+        isValidItem(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /users/{uid}/habits/{habitId} {
+      allow get: if isDocOwner(uid);
+      allow list: if isDocOwner(uid);
+      allow create: if isOwner(uid) &&
+        uidUnchanged(request.resource.data) &&
+        isValidHabit(request.resource.data, habitId);
+      allow update: if isOwner(uid) &&
+        uidNotModified(request.resource.data) &&
+        isValidHabit(request.resource.data, habitId);
+      allow delete: if false;
+    }
+
+    // Default deny for every other path and operation.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
