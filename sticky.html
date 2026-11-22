@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f3efe7" />
+  <title>桌面便利貼・日常</title>
+  <style>
+    :root{color-scheme:light;--paper:#f3efe7;--white:#fffdf8;--ink:#3d3932;--muted:#898174;--line:#e7dfd2;--sage:#6e7657}
+    *{box-sizing:border-box}body{margin:0;padding:18px;background:var(--paper);color:var(--ink);font:14px/1.55 Inter,"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+    .note{min-height:calc(100vh - 36px);padding:19px;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 32px #51473514}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:13px;border-bottom:1px solid var(--line)}
+    h1{font-size:17px;margin:0;font-weight:650}.date{font-size:11px;color:var(--muted);margin-top:3px}.pin{color:var(--sage);font-size:11px;white-space:nowrap}
+    ul{list-style:none;padding:0;margin:12px 0 0}.item{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid #f0eee8}.item:last-child{border-bottom:0}.check{width:16px;height:16px;flex:none;border:1px solid #bdb5a6;border-radius:5px;margin-top:2px;background:white;display:grid;place-items:center;font-size:11px}.item.done .check{background:var(--sage);border-color:var(--sage);color:white}.content{min-width:0}.title{font-size:13px}.done .title{text-decoration:line-through;color:#999184}.meta{font-size:10px;color:var(--muted);margin-top:2px}.empty{color:var(--muted);font-size:12px;text-align:center;padding:26px 0}
+    footer{position:sticky;bottom:0;margin-top:8px;padding-top:12px;background:linear-gradient(transparent,var(--white) 20%);color:var(--muted);font-size:10px;text-align:center}
+  </style>
+</head>
+<body>
+  <main class="note">
+    <header><div><h1>今日小清單</h1><div class="date" id="date"></div></div><span class="pin">⌖ 已釘選</span></header>
+    <ul id="items"></ul>
+    <footer>由「日常」同步 · 關閉主頁後便利貼仍會留在此視窗</footer>
+  </main>
+  <script>
+    (()=>{
+      const noteKey='daily-desktop-note-data',pinnedKey='daily-desktop-note-pinned';
+      const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+      function render(){
+        let note;try{note=JSON.parse(localStorage.getItem(noteKey)||'null')}catch{note=null}
+        document.querySelector('#date').textContent=note?.label||'';
+        const list=note?.items||[];
+        document.querySelector('#items').innerHTML=list.length?list.map(item=>`<li class="item ${item.done?'done':''}"><span class="check">${item.done?'✓':''}</span><div class="content"><div class="title">${escapeHTML(item.title)}</div><div class="meta">${item.time?`${escapeHTML(item.time)} · `:''}${escapeHTML(item.tag||({schedule:'行程',task:'待辦',habit:'習慣',inspiration:'靈感'}[item.type]||''))}</div></div></li>`).join(''):'<li class="empty">這一天沒有安排，享受一點留白 ☁</li>';
+      }
+      window.addEventListener('storage',event=>{if(event.key===noteKey)render();if(event.key===pinnedKey&&event.newValue==='false')window.close()});
+      window.addEventListener('beforeunload',()=>{if(localStorage.getItem(pinnedKey)==='true')localStorage.setItem(pinnedKey,'false')});
+      render();
+    })();
+  </script>
+</body>
+</html>
